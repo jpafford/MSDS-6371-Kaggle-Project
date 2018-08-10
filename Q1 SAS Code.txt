@@ -1,0 +1,126 @@
+
+proc contents data = Train;
+run;
+proc contents data = test;
+run;
+
+
+proc print data = Train;
+run;
+
+data Test;
+set Test;
+SalePrice = .;
+run;
+proc print data = Test;
+run;
+
+data Train2;
+set Train Test;
+run;
+proc print data = Train2;
+run;
+
+proc sort data = Train2 out=SrtTrain;
+by Neighborhood;
+run;
+
+Data Q1;
+	set SrtTrain;
+logGrLIvArea = log(GrLIvArea);
+LogSalePrice = Log(SalePrice);
+ 		KEEP id Neighborhood GrLIvArea SalePrice;
+	if (Neighborhood = 'NAmes') or (Neighborhood = 'Edwards') or (Neighborhood = 'BrkSide');
+run;
+
+Data Q1;
+	set Q1;
+logGrLIvArea = log(GrLIvArea);
+LogSalePrice = Log(SalePrice);
+run;
+proc sort data = Q1 out=Q1;
+by id;
+run;
+proc print data = Q1;
+run;
+
+
+*no transformation;
+proc glm data=Q1 plots=all;
+class   Neighborhood  ;
+model SalePrice =  GrLIvArea  Neighborhood / solution ;
+output out = Results1 r=res p=pred student=stdres;
+run;
+
+*log-log model;
+proc glm data=Q1 plots=all;
+class   Neighborhood  ;
+model LogSalePrice =  LogGrLIvArea  Neighborhood / solution ;
+output out = Results2 r=res p=pred student=stdres;
+run;
+*log-linear model;
+proc glm data=Q1 plots=all;
+class   Neighborhood  ;
+model LogSalePrice =  GrLIvArea  Neighborhood / solution ;
+output out = Results3 r=res p=pred student=stdres;
+run;
+*linear-log model;
+proc glm data=Q1 plots=all;
+class   Neighborhood  ;
+model SalePrice =  LogGrLIvArea  Neighborhood / solution ;
+output out = Results4 r=res p=pred student=stdres;
+run;
+
+Proc sort data = results1 out = rr;
+by res;
+proc print data=rr;
+run;
+
+
+data Q1_2;
+set Q1;
+if (id = 725) or (id = 411) then delete;
+run;
+
+*no transformation and removed outlier = 2;
+proc glm data=Q1_2 plots=all;
+class   Neighborhood  ;
+model SalePrice =  GrLIvArea  Neighborhood / solution ;
+output out = Results1 r=res p=pred student=stdres;
+run;
+
+*log-log model and removed outlier = 2;
+proc glm data=Q1_2 plots=all;
+class   Neighborhood  ;
+model LogSalePrice =  LogGrLIvArea  Neighborhood / solution ;
+output out = Results2 r=res p=pred student=stdres;
+run;
+
+
+
+*no transformation & removed outlier = 2 & Interaction;
+proc glm data=Q1_2 plots=all;
+class   Neighborhood  ;
+model SalePrice =  GrLIvArea | Neighborhood / solution clparm;
+output out = Results1 r=res p=pred student=stdres;
+run;
+
+*log-log model & removed outlier = 2 & Interaction;
+proc glm data=Q1_2 plots=all;
+class   Neighborhood  ;
+model LogSalePrice =  LogGrLIvArea | Neighborhood / solution clparm ;
+output out = Results r=res p=pred student=stdres;
+run;
+
+proc univariate data = Results;
+var SalePrice;
+histogram /normal;
+qqplot /normal;
+run;
+
+
+proc print data = Results;
+run;
+
+
+
